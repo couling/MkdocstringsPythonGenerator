@@ -1,0 +1,2 @@
+# Mkdocstrings Python Generator
+Hello!
