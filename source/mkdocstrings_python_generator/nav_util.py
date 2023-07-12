@@ -91,7 +91,9 @@ def add_page_to_nav(nav_parent: list[NavItem], page: NavItem, module_id: ModuleI
         The page will be added to the nav as <nav_parent> -> "foo" -> "bar".
     :return: The added page.
     """
-    if module_id[-1] == "__init__":
+    if page.file.src_uri.endswith("README.md"):
+        # README.md is optionally used elsewhere for __init__ files to make them a section index page on the nav.
+        # Setting the nav title to None indicates this page is the index of the section.
         page.title = None
     else:
         page.title = module_id[-1]

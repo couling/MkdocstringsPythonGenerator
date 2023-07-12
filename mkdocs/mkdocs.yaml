@@ -4,7 +4,7 @@ site_dir: dist/mkdocs_site
 
 # gives a link on each documentation page directly to edit that page in Github!
 repo_url: https://github.com/couling/MkdocstringsPythonGenerator
-edit_uri: edit/main/docs/
+edit_uri: edit/main/mkdocs/docs/
 
 
 # Enable the theme "Material"
@@ -16,6 +16,9 @@ theme:
     - navigation.tracking
     - navigation.sections
     - navigation.indexes
+
+extra_css:
+  - assets/extra.css
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -45,8 +48,10 @@ plugins:
           docstring_style: sphinx
 - mkdocstrings-python-generator:
     nav_heading:
-      - Reference
+      - Code Reference
     base: ../source
+    edit_uri: edit/main/source/
+    init_section_index: true
     search:
       - ../source/mkdocstrings_python_generator
 
