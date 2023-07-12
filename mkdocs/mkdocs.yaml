@@ -6,6 +6,9 @@ site_dir: dist/mkdocs_site
 repo_url: https://github.com/couling/MkdocstringsPythonGenerator
 edit_uri: edit/main/mkdocs/docs/
 
+nav:
+  - Welcome: index.md
+  - Configuration: configuration.md
 
 # Enable the theme "Material"
 theme:
@@ -54,6 +57,7 @@ plugins:
     init_section_index: true
     search:
       - ../source/mkdocstrings_python_generator
+    prune_nav_prefix: mkdocstrings_python_generator
 
 watch:
   - docs

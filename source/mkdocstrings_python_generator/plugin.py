@@ -27,7 +27,7 @@ class GeneratePythonDocsConfig(base.Config):
     search: list[str] = c.ListOfItems(c.Dir(exists=True))
     ignore: list[str] = c.ListOfItems(c.Type(str), default=["test", "tests", "__main__.py"])
     init_section_index: bool = c.Type(bool, default=False)
-    flatten_nav_package: str = c.Type(str, default="")
+    prune_nav_prefix: str = c.Type(str, default="")
 
 
 class GeneratePythonDocs(BasePlugin[GeneratePythonDocsConfig]):
@@ -63,10 +63,9 @@ class GeneratePythonDocs(BasePlugin[GeneratePythonDocsConfig]):
         The only solid reason for this to exist is to suppress warnings from mkdocs.  Without it, mkdocs would warn that
         generated markdown files were not in the nav.
         """
-        dummy_nav_list = [
-            {".".join(module.module_id): module.file.src_path}
-            for module in self._files_generator.generated_pages.values()
-        ]
+        dummy_nav_list = [{
+            ".".join(module.module_id): module.file.src_path
+        } for module in self._files_generator.generated_pages.values()]
         config["nav"].append({"_ref": dummy_nav_list})
 
     def on_pre_page(self, page: Page, *, config: MkDocsConfig, files: Files) -> Optional[Page]:
@@ -75,7 +74,13 @@ class GeneratePythonDocs(BasePlugin[GeneratePythonDocsConfig]):
         page.edit_url = self.make_edit_url(config, generated_file)
 
     def on_nav(self, nav: Navigation, *, config: MkDocsConfig, files: Files) -> None:
-        nav_util.build_reference_nav(nav, self._files_generator.generated_pages, self.config.nav_heading, config)
+        nav_util.build_reference_nav(
+            nav=nav,
+            generated_pages=self._files_generator.generated_pages,
+            section_heading=self.config.nav_heading,
+            prune_prefix_package=tuple(self.config.prune_nav_prefix.split(".")),
+            config=config,
+        )
 
     def on_post_build(self, *, config: MkDocsConfig) -> None:
         self._cleanup()
@@ -104,8 +109,8 @@ class GeneratePythonDocs(BasePlugin[GeneratePythonDocsConfig]):
 
         # Make a dummy file with the python source file as src_uri instead of the .md file
         dummy_file = File(
-            path=str(file.source_file_path.relative_to(Path(self.config.base))),
-            src_dir=self.config.base,
+            path=("/".join(file.module_id)) + ".py",
+            src_dir="",
             dest_dir=dummy_config["site_dir"],
             use_directory_urls=dummy_config["use_directory_urls"],
         )

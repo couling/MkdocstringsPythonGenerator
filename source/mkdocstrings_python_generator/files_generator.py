@@ -15,16 +15,31 @@ The module ``foo.bar.baz`` will have id ``("foo", "bar", "baz")``"""
 
 
 class FileEntry(NamedTuple):
+    """Stores key information about a markdown/python file internal to mkdocs-python-genfiles"""
     source_file_path: Path
+    """Absolute path to python source file on disk"""
     doc_file_path: Path
+    """Absolute path to markdown file on disk"""
     module_id: ModuleId
+    """Abstract representation of a python module similar to it's dot-part string divided as a tuple
+    
+    Importantly, a package __init__ file for package foo.bar will be ``("foo", "bar", "__init__")``"""
     file: File
+    """Mkdocs File object for use by mkdocs only"""
 
 
 class Source(NamedTuple):
+    """Source of python files"""
     base_path: Path
+    """Root of the python files
+    
+    This is as python might see in PYTHONPATH"""
     dir_path: Path
+    """Directory to search
+    
+    May be the same as base_path but may also be a subdirectory of it, eg: to avoid unit tests."""
     ignore: List[str]
+    """List of glob expressions for files and directories to ignore."""
 
 
 class FilesGenerator:
@@ -78,20 +93,17 @@ class FilesGenerator:
                     module_name=self.module_name(module_id, full_name=False, printable=True),
                     printable_module_id=self.module_name(module_id, full_name=True, printable=True),
                     module_id=self.module_name(module_id, full_name=True, printable=False),
-                )
-            )
+                ))
 
-        entry = FileEntry(
-            source_file_path=source_path,
-            doc_file_path=target_path,
-            module_id=module_id,
-            file=File(
-                str(target_path.relative_to(self.base_path)),
-                src_dir=str(self.base_path),
-                dest_dir=self._dest_dir,
-                use_directory_urls=self._use_directory_urls,
-            )
-        )
+        entry = FileEntry(source_file_path=source_path,
+                          doc_file_path=target_path,
+                          module_id=module_id,
+                          file=File(
+                              str(target_path.relative_to(self.base_path)),
+                              src_dir=str(self.base_path),
+                              dest_dir=self._dest_dir,
+                              use_directory_urls=self._use_directory_urls,
+                          ))
         self.generated_pages[entry.doc_file_path.absolute()] = entry
         return entry
 
@@ -122,7 +134,7 @@ class FilesGenerator:
         :return: An absolute path
         """
         if self._init_section_index and module_id[-1] == "__init__":
-            module_id = module_id[:-1] + ("README.md",)
+            module_id = module_id[:-1] + ("README.md", )
         return Path(self.base_path, "_ref", *module_id).with_suffix(".md")
 
     def module_name(self, module_id: ModuleId, full_name: bool, printable: bool) -> str:
@@ -148,7 +160,6 @@ def get_module_id(module_path: Path, base_path: Path) -> ModuleId:
     :param base_path: the path of the base directory for this package tree.
     """
     return module_path.relative_to(base_path).with_suffix("").parts
-
 
 
 def discover_python_files(source_dir: Path, ignore: List[str]) -> Iterable[Path]:

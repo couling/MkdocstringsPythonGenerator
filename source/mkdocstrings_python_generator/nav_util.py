@@ -21,15 +21,16 @@ class PageEntry(NamedTuple):
     file: FileEntry
 
 
-def build_reference_nav(
-    nav: Navigation, generated_pages: Dict[Path, FileEntry], section_heading: List[str], config: MkDocsConfig
-) -> None:
+def build_reference_nav(nav: Navigation, generated_pages: Dict[Path, FileEntry], section_heading: List[str],
+                        prune_prefix_package: ModuleId, config: MkDocsConfig) -> None:
     """
     [re]build parts of the navigation which were created through dynamic generation
     :param nav: Navigation
     :param generated_pages: generated_pages from files_generator
     :param section_heading: List of titles indicating where to put the generated pages. Eg ``["Reference"]``.
     :param config: MkdocsConfig
+    :param prune_prefix_package: Module id to remove if it exists from every pacakge in the nav.
+        This is typically useful for pruning namespaces from the nav
     :return:
     """
     generated_pages = generated_pages.copy()
@@ -45,9 +46,25 @@ def build_reference_nav(
     pages_to_add.sort(key=lambda item: item.file.module_id)
 
     for page, entry in pages_to_add:
-        add_page_to_nav(nav.items, page, (*section_heading, *entry.module_id))
+        add_page_to_nav(nav.items, page, nav_path_for_module(section_heading, prune_prefix_package, entry))
 
     patch_nav_refs(nav)
+
+
+def nav_path_for_module(section_heading: List[str], prune_prefix_package: ModuleId,
+                        entry: FileEntry) -> Tuple[str, ...]:
+    """
+    Calculate the position of a module in the nav
+    :param section_heading: The section heading for reference documentation
+    :param prune_prefix_package: Configured prefix to prune from every module
+    :param entry: The module's entry
+    """
+    prefix_length = len(prune_prefix_package)
+    if entry.module_id[:prefix_length] == prune_prefix_package:
+        module_id = entry.module_id[prefix_length:]
+    else:
+        module_id = entry.module_id
+    return *section_heading, *module_id
 
 
 def ensure_nav_section(nav_parent: List[NavItem], section_path: Union[List[str], Tuple[str, ...]]) -> Section:
