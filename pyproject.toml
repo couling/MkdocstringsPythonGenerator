@@ -4,19 +4,21 @@ version = "0.1.0"
 description = "Autogenerates a project's mkdocs reference documentation via mkdocstrings-python"
 authors = ["Philip Couling <couling@gmail.com>"]
 license = "MIT"
-readme = "README.md"
+readme = "mkdocs/docs/index.md"
 packages = [
     { include = "mkdocstrings_python_generator", from = "source" },
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.10"
 mkdocstrings-python = "^1.0.0"
 mkdocs = "^1.4.0"
 
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.0"
+mypy = "^1.13.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.0"
 yapf = "^0.40.1"
 
 
@@ -44,6 +46,13 @@ testpaths = [
 [tool.poetry.plugins."mkdocs.plugins"]
 mkdocstrings-python-generator = "mkdocstrings_python_generator.plugin:GeneratePythonDocs"
 
+[tool.mypy]
+packages = [
+    "mkdocstrings_python_generator",
+    "tests",
+]
+check_untyped_defs = true
+mypy_path = "source"
 
 [tool.yapf]
 based_on_style="pep8"
