@@ -4,13 +4,13 @@ version = "0.1.0"
 description = "Autogenerates a project's mkdocs reference documentation via mkdocstrings-python"
 authors = ["Philip Couling <couling@gmail.com>"]
 license = "MIT"
-readme = "README.md"
+readme = "mkdocs/docs/index.md"
 packages = [
     { include = "mkdocstrings_python_generator", from = "source" },
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.10"
 mkdocstrings-python = "^1.0.0"
 mkdocs = "^1.4.0"
 

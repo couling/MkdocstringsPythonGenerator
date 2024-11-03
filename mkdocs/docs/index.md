@@ -11,12 +11,12 @@ determine which plugin is to blame before posting issues here or [there](https:/
 
 ## Features
 
-It's advantages over the [mkdocstrings-python recopy](https://mkdocstrings.github.io/recipes/#automatic-code-reference-pages) are:
+Its advantages over the [mkdocstrings-python recipe](https://mkdocstrings.github.io/recipes/#automatic-code-reference-pages) are:
 
  - ✅ Easier to use (no writing code for yourself)
  - ✅ Well formatted nav out of the box. Package names with underscores are not title case 📦
  - ✅ Compatibility with both explicit nav defined in mkdocs.yaml and implicit nav with no definition in mkdocs.yaml
- - ✅ Supports __init__.py files as [section indexes](https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#section-index-pages) if supported by the theme.
+ - ✅ Supports `__init__.py` files as [section indexes](https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#section-index-pages) if supported by the theme.
  - ✅ Edit URI compatible with both `edit_uri` and `edit_uri_template`
 
 ## Minimal Example
