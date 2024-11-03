@@ -16,6 +16,7 @@ mkdocs = "^1.4.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.4.0"
+mypy = "^1.13.0"
 
 [tool.poetry.group.dev.dependencies]
 yapf = "^0.40.1"
@@ -45,6 +46,13 @@ testpaths = [
 [tool.poetry.plugins."mkdocs.plugins"]
 mkdocstrings-python-generator = "mkdocstrings_python_generator.plugin:GeneratePythonDocs"
 
+[tool.mypy]
+packages = [
+    "mkdocstrings_python_generator",
+    "tests",
+]
+check_untyped_defs = true
+mypy_path = "source"
 
 [tool.yapf]
 based_on_style="pep8"
