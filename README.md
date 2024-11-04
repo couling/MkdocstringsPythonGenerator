@@ -47,5 +47,4 @@ python3 -m build <project dir>
 poetry self add poetry-dynamic-versioning
 cd <project dir>
 poetry build
-
 ```

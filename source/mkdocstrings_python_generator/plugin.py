@@ -1,14 +1,16 @@
 import logging
-from pathlib import Path
-from typing import Optional
+from typing import Dict, List
 
-from mkdocs.config import Config, base, config_options as c
+from mkdocs.config import Config
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import BasePlugin
 from mkdocs.structure.files import File, Files
 from mkdocs.structure.nav import Navigation, Page
 
-from . import files_generator, nav_util
+from mkdocstrings_python_generator import files_generator
+from mkdocstrings_python_generator.config import GeneratePythonDocsConfig, SourceConfig
+from mkdocstrings_python_generator.nav_util import add_page_to_nav, prune_generated_pages, patch_nav_refs
+from mkdocstrings_python_generator.reference_data import GeneratedFileRef
 
 log = logging.getLogger(__name__)
 
@@ -19,104 +21,109 @@ MODULE_PAGE = """# `{module_name}`
 """
 
 
-class GeneratePythonDocsConfig(base.Config):
-    nav_heading: list[str] = c.ListOfItems(c.Type(str), default=["Reference"])
-    base: str = c.Optional(c.Dir(exists=True))
-    edit_uri: str = c.Optional(c.Type(str))
-    edit_uri_template: str = c.Optional(c.Type(str))
-    search: list[str] = c.ListOfItems(c.Dir(exists=True))
-    ignore: list[str] = c.ListOfItems(c.Type(str), default=["test", "tests", "__main__.py"])
-    init_section_index: bool = c.Type(bool, default=False)
-    prune_nav_prefix: str = c.Type(str, default="")
+class GeneratePythonDocsProcessor:
+    _files_generator: files_generator.FilesGenerator
+    _generated_files: Dict[str, GeneratedFileRef]
+    _namespace: tuple[str, ...] = ()
+    _config: SourceConfig
 
-
-class GeneratePythonDocs(BasePlugin[GeneratePythonDocsConfig]):
-    _files_generator: Optional[files_generator.FilesGenerator] = None
-
-    def on_files(self, files: Files, config: Config, **kwargs):
-        self._cleanup()
+    def __init__(self, source_config: SourceConfig, all_config: MkDocsConfig) -> None:
+        self._source_config = source_config
+        self._generated_files = {}
         self._files_generator = files_generator.FilesGenerator(
-            dest_dir=config["site_dir"],
-            use_directory_urls=config["use_directory_urls"],
-            init_section_index=self.config.init_section_index,
+            dest_dir=all_config["site_dir"],
+            use_directory_urls=all_config["use_directory_urls"],
         )
-        for search_path in self.config.search:
-            self._files_generator.generate_pages_recursive(
-                source=files_generator.Source(
-                    base_path=Path(self.config.base or search_path),
-                    dir_path=Path(search_path),
-                    ignore=self.config.ignore,
-                ),
-                template=MODULE_PAGE,
-            )
+        if source_config.hide_namespace:
+            self._namespace = tuple(source_config.hide_namespace.split("."))
+        self._config = source_config
 
-        for file in self._files_generator.generated_pages.values():
-            files.append(file.file)
+    def on_files(self, files: Files, config: Config) -> None:
+        # Generate all markdown files
+        temp_nav_entry = []
+        for file_ref in self._files_generator.generate_pages_recursive(self._config, template=MODULE_PAGE):
+            self._generated_files[file_ref.file.src_path] = file_ref
+            files.append(file_ref.file)
+            # This is just a placeholder, don't worry about the title, as long as the src_path is right
+            temp_nav_entry.append({file_ref.module_ref.module_id: file_ref.file.src_path})
 
         if config["nav"] is not None:
-            self.patch_config_nav(config)
+            # Stop mkdocs warning that that generated markdown files are not in the nav.
+            # Doesn't matter where they go in the nav, it will be fixed later just like auto-generated nav entries
+            config["nav"].append({"👻": temp_nav_entry})
+        # else:
+        # ... Nav entries will be auto-generated.
 
-    def patch_config_nav(self, config: Config) -> None:
-        """
-        Patches an explicit nave with entries for the generated pages
+    def on_pre_page(self, page: Page, *, config: MkDocsConfig) -> None:
+        # The markdown file is about to be rendered, this is our oppertunity to set the edit URL so that the link
+        # is correctly rendered in HTML.
+        src_path = page.file.src_path
+        if src_path is not None and (generated_file := self._generated_files.get(src_path, None)) is not None:
+            page.edit_url = self.make_edit_url(config, generated_file)
 
-        The only solid reason for this to exist is to suppress warnings from mkdocs.  Without it, mkdocs would warn that
-        generated markdown files were not in the nav.
-        """
-        dummy_nav_list = [{
-            ".".join(module.module_id): module.file.src_path
-        } for module in self._files_generator.generated_pages.values()]
-        config["nav"].append({"_ref": dummy_nav_list})
+    def on_nav(self, nav: Navigation) -> None:
+        # nav items for generated files will almost certainly be in the wrong place...
+        # Prune them all
+        pages = list(prune_generated_pages(nav.items, self._generated_files))
+        pages.sort(key=lambda page: page.file.module_ref.ref_path)
 
-    def on_pre_page(self, page: Page, *, config: MkDocsConfig, files: Files) -> Optional[Page]:
-        if (generated_file := self._files_generator.generated_pages.get(Path(page.file.abs_src_path))) is None:
-            return
-        page.edit_url = self.make_edit_url(config, generated_file)
-
-    def on_nav(self, nav: Navigation, *, config: MkDocsConfig, files: Files) -> None:
-        nav_util.build_reference_nav(
-            nav=nav,
-            generated_pages=self._files_generator.generated_pages,
-            section_heading=self.config.nav_heading,
-            prune_prefix_package=tuple(self.config.prune_nav_prefix.split(".")),
-            config=config,
-        )
-
-    def on_post_build(self, *, config: MkDocsConfig) -> None:
-        self._cleanup()
+        for page_ref in pages:
+            add_page_to_nav(
+                navigation=nav,
+                page_ref=page_ref,
+                nav_path=tuple(self._config.nav_heading),
+                name_space=self._namespace,
+            )
 
     def on_shutdown(self) -> None:
         self._cleanup()
 
     def _cleanup(self):
-        if self._files_generator is not None:
-            self._files_generator.cleanup()
-            self._files_generator = None
+        self._files_generator.cleanup()
+        self._generated_files = {}
 
-    def make_edit_url(self, config: Config, file: files_generator.FileEntry) -> str:
-
+    def make_edit_url(self, config: MkDocsConfig, generated_file: GeneratedFileRef) -> str | None:
         # Frustratingly, the mkdocs function to format the edit URL is wrapped up in the constructor of Page
-        # It takes config and the File.src_uri as inputs
-        # To work around this...
+        # Parameters must be supplied through a Config object and a File object.
 
-        # Make a dummy config with edit_uri and edit_uri_template replaced with this plugin's config.
-        if self.config.edit_uri is not None or self.config.edit_uri_template is not None:
-            dummy_config = config.copy()
-            dummy_config["edit_uri"] = self.config.edit_uri
-            dummy_config["edit_uri_template"] = self.config.edit_uri_template
-        else:
-            dummy_config = config
+        # Modify mkdocs config with overrides in this plugin's own configuration
+        temp_config = config.copy()
+        if self._config.edit_uri is not None:
+            temp_config["edit_uri"] = self._config.edit_uri
+        if self._config.edit_uri_template is not None:
+            temp_config["edit_uri_template"] = self._config.edit_uri_template
 
-        # Make a dummy file with the python source file as src_uri instead of the .md file
-        dummy_file = File(
-            path=("/".join(file.module_id)) + ".py",
+        # Make a File object with the python source file as src_uri instead of the .md file
+        # This should work on MS Windows
+        path = "/".join(generated_file.module_ref.module_path.relative_to(generated_file.module_ref.base_path).parts)
+        temp_file = File(
+            path=path,
             src_dir="",
-            dest_dir=dummy_config["site_dir"],
-            use_directory_urls=dummy_config["use_directory_urls"],
+            dest_dir=temp_config["site_dir"],
+            use_directory_urls=temp_config["use_directory_urls"],
         )
+        return Page("👻If you can see this something broke", temp_file, temp_config).edit_url
 
-        # Make a dummy_page page from the dummy_config and dummy_file
-        dummy_page = Page("if you can see this something broke", dummy_file, dummy_config)
 
-        # extract the edit_url
-        return dummy_page.edit_url
+class GeneratePythonDocs(BasePlugin[GeneratePythonDocsConfig]):
+    _source_processors: List[GeneratePythonDocsProcessor]
+
+    def on_config(self, config: MkDocsConfig) -> None:
+        self._source_processors = [GeneratePythonDocsProcessor(c, config) for c in self.config.source_dirs]
+
+    def on_files(self, files: Files, config: Config, **kwargs) -> None:
+        for processor in self._source_processors:
+            processor.on_files(files, config)
+
+    def on_pre_page(self, page: Page, *, config: MkDocsConfig, files: Files) -> None:
+        for processor in self._source_processors:
+            processor.on_pre_page(page, config=config)
+
+    def on_nav(self, nav: Navigation, *, config: MkDocsConfig, files: Files) -> None:
+        for processor in self._source_processors:
+            processor.on_nav(nav)
+        patch_nav_refs(nav)
+
+    def on_shutdown(self) -> None:
+        for processor in self._source_processors:
+            processor.on_shutdown()
