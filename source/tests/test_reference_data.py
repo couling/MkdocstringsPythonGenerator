@@ -21,7 +21,7 @@ def test_module_ref_name(file_path: tuple[str, ...], name: str, tmp_path: Path) 
 
 @pytest.mark.parametrize(["file_path", "module_id"], [
     (("foo", "bar.py"), "foo.bar"),
-    (("foo", "__init__.py"), "foo.__init__"),
+    (("foo", "__init__.py"), "foo"),
     (("foo", "init.py"), "foo.init"),
 ])
 def test_module_ref_module_id(file_path: tuple[str, ...], module_id: str, tmp_path: Path) -> None:
