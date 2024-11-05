@@ -54,6 +54,3 @@ def test_non_wildcard_ignore_is_discriminative(example_files: Path):
     results = {v.module_id for v in files_generator.discover_python_files(example_files, example_files, ["baz.py"])}
     assert "sub_package.baz" not in results
     assert "sub_package.baz_bob" in results
-
-
-def 

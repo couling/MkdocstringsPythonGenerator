@@ -7,18 +7,17 @@ For mkdocstrings-python configuration: [see here](https://mkdocstrings.github.io
 ```yaml
 
 - mkdocstrings-python-generator:
-    nav_heading:
-      - Code Reference
-    search:
-      - src/my_package
-    base: src
-    ignore:
-      - test_*
-
-    
-    edit_uri: edit/main/src/
-    init_section_index: true
-    prune_nav_prefix: my_package
+    source_dirs:
+      - nav_heading: ["Code Reference"]
+        package_dir: src/my_namespace/my_package
+        base: src
+        ignore:
+          - test_*
+        edit_uri: edit/main/src/
+        # edit_uri_template: edit/main/src/{path}
+        hide_namespace: my_namespace
+      
+      - ...
 
 # This part of the config is up to you.
 - mkdocstrings:
@@ -29,13 +28,12 @@ For mkdocstrings-python configuration: [see here](https://mkdocstrings.github.io
 
 ## Options
 
-| Option Name          | Description                                                                                                                                                                                                                                  | Value Type      |
-|----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
-| `nav_heading`        | Describes where to place the generated files on the nav. Eg: if you want `Reference` > `Code Reference` then set `["Reference", "Code Reference"]`                                                                                           | List of Strings |
-| `search`             | Search paths to look for python files relative to mkdocs.yaml                                                                                                                                                                                | List of Strings |
-| `base`               | If different from the search paths, set this to the base directory of python files similar to might be added as `PYTHONPATH`. ⚠️ Only one base may be specified                                                                              | String          |
-| `ignore`             | List of [glob expressions](https://docs.python.org/3/library/glob.html#glob.glob) to ignore from the search. These are applied per file and so cannot specify directories.                                                                   | List of Strings |
-| `edit_uri`           | Override mkdocs [edit_uri](https://www.mkdocs.org/user-guide/configuration/#edit_uri) for generated files                                                                                                                                    | String          |
-| `edit_uri_template`  | Override mkdocs [edit_uri_template](https://www.mkdocs.org/user-guide/configuration/#edit_uri_template) for generated files                                                                                                                  | String          |
-| `init_section_index` | Some themes such as Material support [section indexes](https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/#section-index-pages). If enabled `__init__.py` files with content will be used to define section index pages | Boolean         |
-| `prune_nav_prefix`   | If your package exists deep in some namespace you can remove specific parents from the nav keeping the nav cleaner and simpler.  Simply name the python prefix you want to prune from the nav. Eg: `foo.bar.my_namespace_package`            | String          |
+| Option Name         | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Value Type      |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| `nav_heading`       | Describes where to place the generated files on the nav. Eg: if you want `Reference` > `Code Reference` then set `["Reference", "Code Reference"]`                                                                                                                                                                                                                                                                                                                                                                    | List of Strings |
+| `base`              | The source directory of your project relative to the mkdocs configuration yaml file                                                                                                                                                                                                                                                                                                                                                                                                                                   | String          |
+| `package_dir`       | Normally `base` is enough, `package_dir` lets you specify exactly which package inside `base` to document.                                                                                                                                                                                                                                                                                                                                                                                                            | Sting           |
+| `ignore`            | List of [glob expressions](https://docs.python.org/3/library/glob.html#glob.glob) to ignore from the search. These are applied per file and so cannot specify directories. Default [`test`, `tests`, `__main__.py`].                                                                                                                                                                                                                                                                                                  | List of Strings |
+| `edit_uri`          | Override mkdocs [edit_uri](https://www.mkdocs.org/user-guide/configuration/#edit_uri) for generated files                                                                                                                                                                                                                                                                                                                                                                                                             | String          |
+| `edit_uri_template` | Override mkdocs [edit_uri_template](https://www.mkdocs.org/user-guide/configuration/#edit_uri_template) for generated files                                                                                                                                                                                                                                                                                                                                                                                           | String          |
+| `hide_namespace`    | When using [namespace packages](https://packaging.python.org/en/latest/guides/packaging-namespace-packages/), it is sometimes unhelpful to have the namespace appear as a level on the nav bar. This option lets you move a namespace's packages up a level and so hide the naspace on the nav.  Simply name the python prefix you want to prune from the nav. Eg: if your package is `foo.bar.my_package` and `foo` is the namespace. Set `hide_namespace: foo` and the nav will then just be `bar` -> `my_package`. | String          |

@@ -88,9 +88,10 @@ class GeneratePythonDocsProcessor:
 
         # Modify mkdocs config with overrides in this plugin's own configuration
         temp_config = config.copy()
-        if self._config.edit_uri is not None:
+        if self._config.edit_uri is not None or temp_config["edit_uri_template"] is not None:
+            # These are supposed to be mutually exclusive, but it's possible the main mkdocs config specifies one
+            # and the mkdocstings-python-generator specifies the other.
             temp_config["edit_uri"] = self._config.edit_uri
-        if self._config.edit_uri_template is not None:
             temp_config["edit_uri_template"] = self._config.edit_uri_template
 
         # Make a File object with the python source file as src_uri instead of the .md file
