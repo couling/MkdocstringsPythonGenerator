@@ -34,8 +34,7 @@ See [Configuration](../configuration/) for more detail
 
 # Configure mkdocstrings-python-generator
 - mkdocstrings-python-generator:
-    search:
+    source_dirs:
       # Path to your source directory relative to mkdocs.yaml directory.
-      - src/
-
+      - base: src/
 ```
