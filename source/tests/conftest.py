@@ -1,4 +1,5 @@
 import pytest
+from typing import Iterable
 from pathlib import Path
 
 from mkdocstrings_python_generator.files_generator import FilesGenerator
@@ -10,7 +11,7 @@ def example_files() -> Path:
 
 
 @pytest.fixture()
-def files_generator(tmp_path: Path) -> FilesGenerator:
+def files_generator(tmp_path: Path) -> Iterable[FilesGenerator]:
     generator = FilesGenerator(str(tmp_path / "destination"), use_directory_urls=True)
     yield generator
     generator.cleanup()
