@@ -114,9 +114,6 @@ def discover_python_files(base_dir: Path, source_dir: Path, ignore: List[str]) -
             yield from discover_python_files(base_dir, file, ignore)
 
         elif file.is_file() and file.suffix == ".py":
-            if file.name == "__main__.py":
-                log.debug(f"Skipping {str(file)} all __main__ entrypoints are ignored")
-                continue
             if not file.read_text().strip():
                 log.debug(f"Skipping empty file {str(file)} ")
                 continue
